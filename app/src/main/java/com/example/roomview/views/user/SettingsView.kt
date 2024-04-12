@@ -1,5 +1,8 @@
 package com.example.soiree.screens
 
+import android.content.ComponentName
+import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.roomview.ui.widgets.LoadingCircle
@@ -111,12 +115,20 @@ fun SettingsView(
                     }
                 }
             }
+            val context = LocalContext.current
+            val packageManager: PackageManager = context.packageManager
+            val intent: Intent = packageManager.getLaunchIntentForPackage(context.packageName)!!
+            val componentName: ComponentName = intent.component!!
+            val restartIntent: Intent = Intent.makeRestartActivityTask(componentName)
 
 
             Button(
                 onClick = {
                     viewModel.signOut()
                     onSignOut()
+
+                    context.startActivity(restartIntent)
+                    Runtime.getRuntime().exit(0)
                 },
                 modifier = Modifier
                     .fillMaxWidth()

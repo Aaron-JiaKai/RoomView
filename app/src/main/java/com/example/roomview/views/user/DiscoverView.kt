@@ -1,6 +1,8 @@
 package com.example.roomview.views.user
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.location.Location
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,7 +21,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.roomview.MainActivity
 import com.example.roomview.model.Event
 import com.example.roomview.navgraph.Routes
 import com.example.roomview.ui.widgets.EventCardContent
@@ -35,7 +37,10 @@ import com.example.roomview.viewmodels.user.DiscoverViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
@@ -43,9 +48,9 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
+@SuppressLint("MissingPermission")
 @OptIn(ExperimentalPermissionsApi::class, FlowPreview::class)
 @Composable
 fun DiscoverView(
@@ -74,16 +79,29 @@ fun DiscoverView(
         }
     }
 
-    var currentLatLng: LatLng by remember { mutableStateOf(LatLng(0.0, 0.0)) }
-
-    val cameraPositionState = rememberCameraPositionState()
-    LaunchedEffect(cameraPositionState) {
-        snapshotFlow {
-            cameraPositionState.position.target
-        }.debounce(200).collect { currentLatLng = it }
-    }
-
     if (fineLocationState.status.isGranted) {
+
+        val fusedLocationProviderClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+        var lastKnownLocation by remember { mutableStateOf<Location?>(null) }
+
+        var deviceLatLng by remember { mutableStateOf(LatLng(0.0, 0.0)) }
+
+        val locationResult = fusedLocationProviderClient.lastLocation
+        locationResult.addOnCompleteListener(context as MainActivity) { task ->
+            if (task.isSuccessful) {
+
+                lastKnownLocation = task.result
+                deviceLatLng = LatLng(lastKnownLocation!!.latitude, lastKnownLocation!!.longitude)
+            }
+        }
+
+        val cameraState = rememberCameraPositionState()
+
+        LaunchedEffect(key1 = deviceLatLng) {
+            cameraState.centerOnLocation(deviceLatLng)
+        }
+
         Column(
             modifier = Modifier.padding(paddingValues)
         ) {
@@ -95,9 +113,9 @@ fun DiscoverView(
                         LocalConfiguration.current.screenHeightDp.dp -
                                 paddingValues.calculateTopPadding() -
                                 paddingValues.calculateBottomPadding() -
-                                120.dp
+                                150.dp
                     ),
-                    cameraPositionState = cameraPositionState,
+                    cameraPositionState = cameraState,
                     properties = MapProperties(
                         mapType = MapType.NORMAL,
                         isMyLocationEnabled = true,
@@ -120,7 +138,7 @@ fun DiscoverView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(all = 4.dp)
-                        .height(120.dp)
+                        .height(150.dp)
                 ) {
                     Column(
                         modifier = Modifier.fillMaxSize(),
@@ -147,3 +165,13 @@ fun DiscoverView(
         PermissionView()
     }
 }
+
+private suspend fun CameraPositionState.centerOnLocation(
+    location: LatLng
+) = animate(
+    update = CameraUpdateFactory.newLatLngZoom(
+        location,
+        15f
+    ),
+    durationMs = 1500
+)

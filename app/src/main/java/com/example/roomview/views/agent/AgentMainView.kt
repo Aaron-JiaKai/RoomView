@@ -1,5 +1,6 @@
 package com.example.roomview.views.agent
 
+import android.annotation.SuppressLint
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,11 +16,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.roomview.navgraph.AgentNavGraph
 import com.example.roomview.ui.widgets.AppBottomBar
 
+
 @Composable
 fun AgentMainView(navController: NavHostController = rememberNavController()) {
     Scaffold(bottomBar = {
         AgentBottomBar(navController = navController)
-    }) { padding ->
+    }) {padding ->
         AgentNavGraph(navController = navController, paddingValues = padding)
     }
 }

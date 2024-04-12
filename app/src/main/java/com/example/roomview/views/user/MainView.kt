@@ -1,5 +1,6 @@
 package com.example.roomview.views.user
 
+import android.annotation.SuppressLint
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.roomview.navgraph.HomeNavGraph
 import com.example.roomview.ui.widgets.AppBottomBar
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun MainView(navController: NavHostController = rememberNavController()) {
     Scaffold(bottomBar = {

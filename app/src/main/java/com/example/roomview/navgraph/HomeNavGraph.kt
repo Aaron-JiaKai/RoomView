@@ -1,5 +1,6 @@
 package com.example.roomview.navgraph
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -15,8 +16,7 @@ import com.example.roomview.views.user.SwitchAgentView
 import com.example.soiree.screens.SettingsView
 
 
-/**/
-
+@SuppressLint("RestrictedApi")
 @Composable
 fun HomeNavGraph(navController: NavHostController, paddingValues: PaddingValues) {
     NavHost(
@@ -58,11 +58,10 @@ fun HomeNavGraph(navController: NavHostController, paddingValues: PaddingValues)
                 onSignOut = {
                     navController.popBackStack()
                     navController.navigate(Graph.AUTHENTICATION) {
-                        popUpTo(Graph.HOME) {
+                        popUpTo(Graph.AUTHENTICATION) {
                             inclusive = true
                         }
                     }
-
                 },
                 onEdit = {
                     navController.navigate(Routes.EditProfile.route)
@@ -97,7 +96,6 @@ fun HomeNavGraph(navController: NavHostController, paddingValues: PaddingValues)
 
 
 sealed class Routes(val route: String) {
-
     data object EventDetails : Routes(route = "EVENT_INFORMATION/{value}")
     data object EditProfile : Routes(route = "EDIT_PROFILE")
     data object SwitchAgent : Routes(route = "SWITCH_AGENT")

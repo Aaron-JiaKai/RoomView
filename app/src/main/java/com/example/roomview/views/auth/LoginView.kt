@@ -2,6 +2,11 @@
 
 package com.example.roomview.views.auth
 
+import android.annotation.SuppressLint
+import android.content.ComponentName
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,22 +38,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.roomview.R
+import com.example.roomview.navgraph.AuthScreen
+import com.example.roomview.navgraph.Graph
 import com.example.roomview.ui.widgets.CustomTextField
 import com.example.roomview.ui.widgets.WarningDialog
 import com.example.roomview.viewmodels.auth.LoginViewModel
 import kotlinx.coroutines.launch
 
+@SuppressLint("RestrictedApi")
 @Composable
 fun LoginContent(
-    onLogin: () -> Unit,
-    onAgentLogin: () -> Unit,
+    navController: NavController,
     onSignUpClick: () -> Unit
 ) {
     val viewModel: LoginViewModel = viewModel()
@@ -60,9 +69,11 @@ fun LoginContent(
     val options = mutableListOf("User", "Agent")
     var selectedIndex by remember { mutableIntStateOf(0) }
 
+
     DisposableEffect(Unit) {
         val job = scope.launch {
             viewModel.getAllUsers()
+
         }
 
         onDispose {
@@ -97,7 +108,9 @@ fun LoginContent(
             ) {
 
                 SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 ) {
                     options.forEachIndexed { index, option ->
                         SegmentedButton(
@@ -153,12 +166,32 @@ fun LoginContent(
                 modifier = Modifier.padding(4.dp),
                 onClick = {
                     scope.launch {
-                        val data = viewModel.login(email.value.trim(), password.value.trim(), selectedIndex)
+                        val data = viewModel.login(
+                            email.value.trim(),
+                            password.value.trim(),
+                            selectedIndex
+                        )
 
                         if (data != null) { // Navigate to Home page
                             when (selectedIndex) {
-                                0 -> onLogin()
-                                1 -> onAgentLogin()
+                                0 -> {
+                                    navController.navigate(Graph.HOME) {
+                                        popUpTo(AuthScreen.LOGIN.route) {
+                                            inclusive = true
+                                        }
+                                    }
+                                    Log.d("TESTING", "${navController.currentBackStack.value}")
+
+                                }
+
+                                1 -> {
+                                    navController.navigate(Graph.AGENT) {
+                                        popUpTo(AuthScreen.LOGIN.route) {
+                                            inclusive = true
+                                        }
+                                    }
+                                    Log.d("TESTING", "${navController.currentBackStack.value}")
+                                }
                             }
                         } else {
                             showLoginError = true
