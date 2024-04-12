@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "636727496326",
+    "project_id": "room-view-2d728",
+    "storage_bucket": "room-view-2d728.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:636727496326:android:3f722a9338bdb29601cb07",
+        "android_client_info": {
+          "package_name": "com.example.roomview"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_tEFHaGufQBdN5cDYteps-zEl_oHQpmc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
