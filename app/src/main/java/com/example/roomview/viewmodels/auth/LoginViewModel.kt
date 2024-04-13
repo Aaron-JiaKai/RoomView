@@ -25,6 +25,11 @@ class LoginViewModel: ViewModel() {
 
         var currentUser: User? = null
 
+        if (email == "") {
+            _message.value = "Email is empty"
+            return null
+        }
+
         for (user in allUserList) {
             if (email == user.email) {
                 currentUser = user
