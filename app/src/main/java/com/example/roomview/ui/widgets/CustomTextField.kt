@@ -17,8 +17,8 @@ fun CustomTextField(
     isPassword: Boolean = false,
     isSingleLine: Boolean = false,
     maxLines: Int = 1,
-    leadingIcon: @Composable() (() -> Unit)? = {},
-    trailingIcon: @Composable() (() -> Unit)? = {},
+    leadingIcon: @Composable() (() -> Unit)? = null,
+    trailingIcon: @Composable() (() -> Unit)? = null,
     readOnly: Boolean = false,
     modifier: Modifier = Modifier
 ) {

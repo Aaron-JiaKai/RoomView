@@ -18,7 +18,8 @@ class EventDetailsViewModel : ViewModel() {
     private var allEventMemberList = mutableListOf<EventMember>()
     private var allUserList = mutableListOf<User>()
     private var joinedUserIdList = mutableListOf<Int>()
-    private var currentUser: User? = null
+
+    var currentUser: User? = null
 
     var event: Event? = null
     var joinedUserList = mutableListOf<User>()
@@ -39,7 +40,9 @@ class EventDetailsViewModel : ViewModel() {
     }
 
     suspend fun leaveEvent(eventId: Int): Response<EventMember>? {
+
         getCurrentUser()
+
         var currentEventMember: EventMember? = null
         if (currentUser != null && allEventMemberList.isNotEmpty()) {
             for (eventMember in allEventMemberList) {
@@ -54,7 +57,7 @@ class EventDetailsViewModel : ViewModel() {
         return null
     }
 
-    suspend fun getEvent(eventId: Int) {
+    private suspend fun getEvent(eventId: Int) {
         val response = repository.getEvent(eventId)
 
         if (response.isSuccessful) {
@@ -62,11 +65,12 @@ class EventDetailsViewModel : ViewModel() {
         }
     }
 
-    suspend fun getEventMembers(eventId: Int) {
+    private suspend fun getEventMembers(eventId: Int) {
 
         val response = getAllEventMembers()
 
         if (response.isSuccessful) {
+            joinedUserIdList.clear()
             for (eventMember in allEventMemberList) {
                 if (eventMember.eventId == eventId) {
                     joinedUserIdList.add(eventMember.userId)
@@ -75,26 +79,31 @@ class EventDetailsViewModel : ViewModel() {
         }
     }
 
-    suspend fun getJoinedUsers() {
+    suspend fun getJoinedUsers(eventId: Int) {
+        getEvent(eventId)
+        getCurrentUser()
+        getEventMembers(eventId)
 
+        joinedUserList.clear()
+        for (user in allUserList) {
+            if (joinedUserIdList.contains(user.id)) {
+                joinedUserList.add(user)
+            }
+        }
+
+        if (currentUser != null && joinedUserIdList.isNotEmpty()) {
+            joinStatus.value = joinedUserIdList.contains(currentUser!!.id)
+        }
+
+    }
+
+
+    private suspend fun getAllUsers() {
         val response = repository.getUsers()
 
         if (response.isSuccessful) {
             allUserList.clear()
             response.body()?.let { allUserList.addAll(it) }
-
-            for (user in allUserList) {
-                if (joinedUserIdList.contains(user.id)) {
-                    joinedUserList.add(user)
-                }
-            }
-
-            getCurrentUser()
-
-            if (currentUser != null && joinedUserIdList.isNotEmpty()) {
-                joinStatus.value = joinedUserIdList.contains(currentUser!!.id)
-            }
-
         }
     }
 
@@ -108,7 +117,10 @@ class EventDetailsViewModel : ViewModel() {
         return response
     }
 
-    private fun getCurrentUser() {
+    private suspend fun getCurrentUser() {
+
+        getAllUsers()
+
         val uid = auth.currentUser?.uid
 
         for (user in allUserList) {

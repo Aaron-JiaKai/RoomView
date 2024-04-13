@@ -80,16 +80,24 @@ fun EventCardContent(
                     fontSize = MaterialTheme.typography.bodySmall.fontSize,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (date != null) {
+                if (event.isDeleted) {
                     Text(
-                        text = date,
+                        text = "Cancelled",
                         modifier = Modifier.fillMaxWidth(),
                         fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.error
                     )
+                } else  {
+                    if (date != null) {
+                        Text(
+                            text = date,
+                            modifier = Modifier.fillMaxWidth(),
+                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
+                    }
                 }
-
             }
         }
     }

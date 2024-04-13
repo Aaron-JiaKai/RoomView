@@ -7,7 +7,6 @@ data class Event(
     var id: Int,
     var title: String,
     var description: String,
-    var eventType: Int,
     var houseType: Int,
     var imageUrl: String,
     var agentId: String,

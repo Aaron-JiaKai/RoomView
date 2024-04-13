@@ -2,7 +2,6 @@ package com.example.roomview.viewmodels.agent
 
 import androidx.lifecycle.ViewModel
 import com.example.roomview.model.Event
-import com.example.roomview.model.EventMember
 import com.example.roomview.model.User
 import com.example.roomview.repository.Repository
 import com.google.firebase.auth.FirebaseAuth
@@ -16,16 +15,13 @@ class AgentEventsViewModel() : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val repository: Repository = Repository()
 
+    private var currentUser: User? = null
     private val allUserList = mutableListOf<User>()
     private val allEventList = mutableListOf<Event>()
-    private val validEventList = mutableListOf<Event>()
-    private val allEventMemberList = mutableListOf<EventMember>()
-    private var currentUser: User? = null
+    private val allOwnEventList = mutableListOf<Event>()
 
-    private val joinedEventIdList = mutableListOf<Int>()
-
-    val otherEventList = mutableListOf<Event>()
-    val searchedEventList = mutableListOf<Event>()
+    val ownValidEventList = mutableListOf<Event>()
+    val ownExpiredEventList = mutableListOf<Event>()
 
     private suspend fun getAllEvents() {
         val response = repository.getEvents()
@@ -36,53 +32,36 @@ class AgentEventsViewModel() : ViewModel() {
         }
     }
 
-    private suspend fun getValidEvents() {
+    private suspend fun getOwnEvents() {
         getAllEvents()
-
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-
-        for (event in allEventList) {
-            if (!event.isDeleted && inputFormat.parse(event.eventDate)!! >= Date()) {
-                validEventList.add(event)
-            }
-        }
-    }
-
-    suspend fun getJoinedEvents() {
-        getValidEvents()
-        getAllEventMembers()
         getAllUsers()
 
         if (currentUser != null) {
-            for (eventMember in allEventMemberList) {
-                if (eventMember.userId == currentUser!!.id) {
-                    joinedEventIdList.add(eventMember.eventId)
+            for (event in allEventList) {
+                if (event.agentId.toInt() == currentUser!!.id) {
+                    allOwnEventList.add(event)
                 }
             }
         }
 
-        for (event in validEventList) {
-            if (!joinedEventIdList.contains(event.id)) {
-                otherEventList.add(event)
+        allUserList.clear()
+        allEventList.clear()
+    }
+
+    suspend fun getValidEvents() {
+        getOwnEvents()
+
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+
+        for (event in allOwnEventList) {
+            if (!event.isDeleted && inputFormat.parse(event.eventDate)!! >= Date()) {
+                ownValidEventList.add(event)
+            } else {
+                ownExpiredEventList.add(event)
             }
         }
 
-        allEventMemberList.clear()
-        allUserList.clear()
-        joinedEventIdList.clear()
-        allEventList.clear()
-        validEventList.clear()
-    }
-
-    private suspend fun getAllEventMembers(): Response<List<EventMember>> {
-        val response = repository.getEventMembers()
-
-        if (response.isSuccessful) {
-            allEventMemberList.clear()
-            response.body()?.let { allEventMemberList.addAll(it) }
-        }
-
-        return response
+        allOwnEventList.clear()
     }
 
     private suspend fun getAllUsers(): Response<List<User>> {
@@ -106,18 +85,6 @@ class AgentEventsViewModel() : ViewModel() {
                 currentUser = user
             }
         }
-    }
-
-    fun performSearch(searchText: String) {
-
-
-
-    }
-
-    fun clearSearchResults() {
-
-
-
     }
 
 

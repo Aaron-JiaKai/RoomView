@@ -2,7 +2,6 @@ package com.example.roomview.api
 
 import com.example.roomview.model.Event
 import com.example.roomview.model.EventMember
-import com.example.roomview.model.Timeslot
 import com.example.roomview.model.User
 import retrofit2.Response
 import retrofit2.http.Body
@@ -53,31 +52,6 @@ interface RoomViewApi {
         @Path("userId") userId: Int,
         @Body user: User
     ): Response<User>
-
-    // Timeslots
-    @GET("timeslots")
-    suspend fun getTimeslots(): Response<List<Timeslot>>
-
-    @GET("timeslots/{timeslotId}")
-    suspend fun getTimeslot(
-        @Path("timeslotId") timeslotId: Int
-    ): Response<Timeslot>
-
-    @POST("timeslots")
-    suspend fun postTimeslot(
-        @Body timeslot: Timeslot
-    ): Response<Timeslot>
-
-    @PUT("timeslots/{timeslotId}")
-    suspend fun putTimeslot(
-        @Path("timeslotId") timeslotId: Int,
-        @Body timeslot : Timeslot
-    ): Response<Timeslot>
-
-    @DELETE("timeslots/{timeslotId}")
-    suspend fun deleteTimeslot(
-        @Path("timeslotId") timeslotId: Int
-    ): Response<Timeslot>
 
     // EventMembers
     @GET("eventMembers")

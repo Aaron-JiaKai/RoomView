@@ -3,7 +3,6 @@ package com.example.roomview.repository
 import com.example.roomview.api.RetrofitInstance
 import com.example.roomview.model.Event
 import com.example.roomview.model.EventMember
-import com.example.roomview.model.Timeslot
 import com.example.roomview.model.User
 import retrofit2.Response
 
@@ -41,27 +40,6 @@ class Repository {
 
     suspend fun putUser(userId: Int, user: User): Response<User> {
         return RetrofitInstance.api.putUser(userId, user)
-    }
-
-    // Timeslots
-    suspend fun getTimeslots(): Response<List<Timeslot>> {
-        return RetrofitInstance.api.getTimeslots()
-    }
-
-    suspend fun getTimeslot(timeslotId: Int): Response<Timeslot> {
-        return RetrofitInstance.api.getTimeslot(timeslotId)
-    }
-
-    suspend fun postTimeslot(timeslot: Timeslot): Response<Timeslot> {
-        return RetrofitInstance.api.postTimeslot(timeslot)
-    }
-
-    suspend fun putTimeslot(timeslotId: Int, timeslot: Timeslot): Response<Timeslot> {
-        return RetrofitInstance.api.putTimeslot(timeslotId, timeslot)
-    }
-
-    suspend fun deleteTimeslot(timeslotId: Int): Response<Timeslot> {
-        return RetrofitInstance.api.deleteTimeslot(timeslotId)
     }
 
     // Event Members

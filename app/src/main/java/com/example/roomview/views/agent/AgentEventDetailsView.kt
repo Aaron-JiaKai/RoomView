@@ -2,6 +2,7 @@ package com.example.roomview.views.agent
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +16,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedCard
@@ -40,7 +41,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -81,6 +81,8 @@ fun AgentEventDetailsView(
     val eventMemberList = viewModel.joinedUserList
     val joinStatus = viewModel.joinStatus
 
+    val currentUser = viewModel.currentUser
+
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
 
@@ -88,9 +90,7 @@ fun AgentEventDetailsView(
         val job = scope.launch {
 
             if (event == null) {
-                viewModel.getEvent(eventId.toInt())
-                viewModel.getEventMembers(eventId.toInt())
-                viewModel.getJoinedUsers()
+                viewModel.getJoinedUsers(eventId.toInt())
             }
 
             isLoadingState.value = false
@@ -209,68 +209,77 @@ fun AgentEventDetailsView(
                                 ElevatedCard(
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(all = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    Column(
+                                        modifier = Modifier
+                                            .padding(all = 12.dp)
+                                            .fillMaxWidth(),
+                                        verticalArrangement = Arrangement.Center
                                     ) {
                                         Text(
                                             event.title,
-                                            fontSize = 20.sp,
+                                            fontSize = MaterialTheme.typography.titleLarge.fontSize,
                                             fontWeight = FontWeight.Bold,
                                             modifier = Modifier
-                                                .padding(top = 10.dp, bottom = 20.dp)
-                                                .weight(1f)
+                                                .fillMaxWidth(),
+                                            textAlign = TextAlign.Start,
+                                            color = MaterialTheme.colorScheme.secondary
                                         )
 
-                                        // Disable when event in eventMember
-                                        if (!joinStatus.value) {
-                                            Button(
-                                                onClick = {
-                                                    scope.launch {
-                                                        val response =
-                                                            viewModel.joinEvent(eventId.toInt())
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            if (!event.isDeleted) {
+                                                // Disable when event in eventMember
+                                                Button(
+                                                    onClick = {
+                                                        scope.launch {
+                                                            val response =
+                                                                viewModel.cancelEvent(eventId.toInt())
 
-                                                        if (response != null && response.isSuccessful) {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Joined successfully",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
+                                                            if (response != null && response.isSuccessful) {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Event cancelled successfully",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+
+                                                            onBack()
                                                         }
-
-                                                        onBack()
-                                                    }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        MaterialTheme.colorScheme.error
+                                                    )
+                                                ) {
+                                                    Icon(Icons.Default.Delete, null)
+                                                    Text("Cancel Event")
                                                 }
-                                            ) {
-                                                Icon(Icons.AutoMirrored.Filled.Login, null)
-                                                Text("Join Event")
-                                            }
-                                        } else {
-                                            Button(
-                                                onClick = {
-                                                    scope.launch {
-                                                        val response =
-                                                            viewModel.leaveEvent(eventId.toInt())
+                                            } else {
+                                                Button(
+                                                    onClick = {
+                                                        scope.launch {
+                                                            val response =
+                                                                viewModel.restoreEvent(eventId.toInt())
 
-                                                        if (response != null && response.isSuccessful) {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Left successfully",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
+                                                            if (response != null && response.isSuccessful) {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Event restored successfully",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+
+                                                            onBack()
                                                         }
-
-                                                        onBack()
-                                                    }
-                                                },
-                                                colors = ButtonDefaults.buttonColors(
-                                                    MaterialTheme.colorScheme.error
-                                                )
-                                            ) {
-                                                Icon(Icons.Default.Delete, null)
-                                                Text("Leave Event")
+                                                    },
+                                                ) {
+                                                    Icon(Icons.Default.Restore, null)
+                                                    Text("Restore Event")
+                                                }
                                             }
                                         }
+
 
                                     }
                                 }

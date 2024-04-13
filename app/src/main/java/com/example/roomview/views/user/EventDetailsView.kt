@@ -2,6 +2,7 @@ package com.example.roomview.views.user
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,7 +41,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -81,6 +81,8 @@ fun EventDetailsView(
     val eventMemberList = viewModel.joinedUserList
     val joinStatus = viewModel.joinStatus
 
+    val currentUser = viewModel.currentUser
+
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
 
@@ -88,9 +90,7 @@ fun EventDetailsView(
         val job = scope.launch {
 
             if (event == null) {
-                viewModel.getEvent(eventId.toInt())
-                viewModel.getEventMembers(eventId.toInt())
-                viewModel.getJoinedUsers()
+                viewModel.getJoinedUsers(eventId.toInt())
             }
 
             isLoadingState.value = false
@@ -209,66 +209,76 @@ fun EventDetailsView(
                                 ElevatedCard(
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(all = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    Column(
+                                        modifier = Modifier
+                                            .padding(all = 12.dp)
+                                            .fillMaxWidth(),
+                                        verticalArrangement = Arrangement.Center
                                     ) {
                                         Text(
                                             event.title,
-                                            fontSize = 20.sp,
+                                            fontSize = MaterialTheme.typography.titleLarge.fontSize,
                                             fontWeight = FontWeight.Bold,
                                             modifier = Modifier
-                                                .padding(top = 10.dp, bottom = 20.dp)
-                                                .weight(1f)
+                                                .fillMaxWidth(),
+                                            textAlign = TextAlign.Start,
+                                            color = MaterialTheme.colorScheme.secondary
                                         )
 
-                                        // Disable when event in eventMember
-                                        if (!joinStatus.value) {
-                                            Button(
-                                                onClick = {
-                                                    scope.launch {
-                                                        val response =
-                                                            viewModel.joinEvent(eventId.toInt())
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            if (event.agentId.toInt() != (currentUser?.id ?: 0)) {
+                                                // Disable when event in eventMember
+                                                if (!joinStatus.value) {
+                                                    Button(
+                                                        onClick = {
+                                                            scope.launch {
+                                                                val response =
+                                                                    viewModel.joinEvent(eventId.toInt())
 
-                                                        if (response != null && response.isSuccessful) {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Joined successfully",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
+                                                                if (response != null && response.isSuccessful) {
+                                                                    Toast.makeText(
+                                                                        context,
+                                                                        "Joined successfully",
+                                                                        Toast.LENGTH_SHORT
+                                                                    ).show()
+                                                                }
+
+                                                                onBack()
+                                                            }
                                                         }
+                                                    ) {
+                                                        Icon(Icons.AutoMirrored.Filled.Login, null)
+                                                        Text("Join Event")
+                                                    }
+                                                } else {
+                                                    Button(
+                                                        onClick = {
+                                                            scope.launch {
+                                                                val response =
+                                                                    viewModel.leaveEvent(eventId.toInt())
 
-                                                        onBack()
+                                                                if (response != null && response.isSuccessful) {
+                                                                    Toast.makeText(
+                                                                        context,
+                                                                        "Left successfully",
+                                                                        Toast.LENGTH_SHORT
+                                                                    ).show()
+                                                                }
+
+                                                                onBack()
+                                                            }
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            MaterialTheme.colorScheme.error
+                                                        )
+                                                    ) {
+                                                        Icon(Icons.Default.Delete, null)
+                                                        Text("Leave Event")
                                                     }
                                                 }
-                                            ) {
-                                                Icon(Icons.AutoMirrored.Filled.Login, null)
-                                                Text("Join Event")
-                                            }
-                                        } else {
-                                            Button(
-                                                onClick = {
-                                                    scope.launch {
-                                                        val response =
-                                                            viewModel.leaveEvent(eventId.toInt())
-
-                                                        if (response != null && response.isSuccessful) {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Left successfully",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        }
-
-                                                        onBack()
-                                                    }
-                                                },
-                                                colors = ButtonDefaults.buttonColors(
-                                                    MaterialTheme.colorScheme.error
-                                                )
-                                            ) {
-                                                Icon(Icons.Default.Delete, null)
-                                                Text("Leave Event")
                                             }
                                         }
 

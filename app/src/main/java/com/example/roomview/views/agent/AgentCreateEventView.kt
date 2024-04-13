@@ -2,52 +2,68 @@ package com.example.roomview.views.agent
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.location.Address
+import android.location.Geocoder
 import android.net.Uri
 import android.widget.DatePicker
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.roomview.R
 import com.example.roomview.ui.widgets.CustomTextField
+import com.example.roomview.ui.widgets.HouseType
 import com.example.roomview.ui.widgets.LoadingCircle
+import com.example.roomview.viewmodels.agent.AgentCreateEventViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 import java.util.TimeZone
 
 
@@ -57,35 +73,44 @@ fun AgentCreateEventView(
     onSuccessCreate: () -> Unit,
     paddingValues: PaddingValues
 ) {
-    var imageUri = remember { mutableStateOf<Uri?>(null) }
+
+    val viewModel: AgentCreateEventViewModel = viewModel()
     val context = LocalContext.current
+
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         imageUri.value = uri
     }
-    val placeholderImage = "https://fakeimg.pl/600x400?text=No+Media"
 
     val eventTitle = remember { mutableStateOf("") }
     val eventDescription = remember { mutableStateOf("") }
-    val selectedCommunityId = remember { mutableStateOf("") }
-    val selectedCommunityName = remember { mutableStateOf("") }
-    var pickedDate = remember { mutableStateOf("") }
-    var pickedTime = remember { mutableStateOf("") }
-    var location = remember { mutableStateOf("") }
+    val pickedDate = remember { mutableStateOf("") }
+    val pickedTime = remember { mutableStateOf("") }
+    val eventLocation = remember { mutableStateOf("") }
+    val eventAddress = remember { mutableStateOf<Address?>(null) }
 
-    var isMenuOpen = remember { mutableStateOf(false) }
+    val isMenuOpen = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    //val viewModel: CreateEventViewModel = viewModel()
 
     val isLoadingState = remember { mutableStateOf(true) }
     val scrollState = rememberScrollState()
 
     val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+
     format.timeZone = TimeZone.getDefault()
 
+    val options = mutableListOf(HouseType.TERRACE, HouseType.SEMI_D, HouseType.CONDO)
+    var selectedIndex by remember { mutableIntStateOf(0) }
+
+    var currentUser = viewModel.currentUser
 
     DisposableEffect(Unit) {
         val job = scope.launch {
-            viewModel.getOwnCommunityData()
+            if (currentUser == null) {
+                viewModel.getCurrentUser()
+            }
             isLoadingState.value = false
         }
 
@@ -106,79 +131,175 @@ fun AgentCreateEventView(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             TopAppBar(
-                title = { Text("Schedule a new Event") },
+                title = { Text("List a property") },
                 actions = {
                     Button(onClick = {
                         scope.launch {
-                            imageUri.value?.let {
-                                viewModel.createEvent(
-                                    imageUri = it,
-                                    title = eventTitle.value,
-                                    date = format.parse("${pickedDate.value} ${pickedTime.value}") as Date,
-                                    description = eventDescription.value,
-                                    community = selectedCommunityId.value,
-                                    location = location.value
-                                )
-                            }
-                            if (viewModel.alreadyExist.value) {
-                                showCreateError = true
-                            }
 
-                            if (viewModel.successAdd.value) {
-                                onSuccessCreate()
+                            val eventDate = "${pickedDate.value}T${pickedTime.value}"
+
+
+                            if (eventAddress.value == null && eventLocation.value != "") {
+                                val geocoder = Geocoder(context)
+
+                                val results =
+                                    eventLocation.value.let { geocoder.getFromLocationName(it, 1) }
+                                if (!results.isNullOrEmpty()) {
+                                    val addressArray: List<Address> = results
+
+                                    for (address in addressArray) {
+                                        eventLocation.value = address.getAddressLine(0)
+                                        eventAddress.value = address
+                                    }
+                                }
+                            }
+                            if (eventAddress.value != null) {
+                                if (viewModel.createEvent(
+                                    eventTitle.value,
+                                    eventDescription.value,
+                                    selectedIndex,
+                                    imageUri.value,
+                                    eventDate,
+                                    eventLocation.value,
+                                    eventAddress.value!!.latitude,
+                                    eventAddress.value!!.longitude,
+                                    context
+                                ) != null) {
+                                    onSuccessCreate();
+                                }
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Invalid address is entered",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
-
                     }) {
                         Text("Post")
                     }
                 }
             )
-
-            Image(
-                rememberAsyncImagePainter(
-                    model = ImageRequest
-                        .Builder(context)
-                        .crossfade(false)
-                        .data(imageUri.value ?: placeholderImage)
-                        .build(),
-                    filterQuality = FilterQuality.High
-                ),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .clickable {
-                        launcher.launch("image/*")
-                    }
-            )
-            Text("Select an image")
-
-            Column(
-                modifier = Modifier.padding(horizontal = 48.dp)
+                    .height(200.dp),
             ) {
-                CustomTextField(
-                    value = eventTitle,
-                    onValueChange = { newValue ->
-                        eventTitle.value = newValue;
+                Image(
+                    painter =
+                    if (imageUri.value != null) {
+                        rememberAsyncImagePainter(
+                            model = ImageRequest.Builder(context)
+                                .crossfade(false)
+                                .data(imageUri.value)
+                                .build(),
+                            filterQuality = FilterQuality.High
+                        )
+                    } else {
+                        painterResource(id = R.drawable.placeholder)
                     },
-                    label = "Title",
-                    isPassword = false
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clickable {
+                            launcher.launch("image/*")
+                        }
                 )
+                if (imageUri.value == null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        verticalArrangement = Arrangement.Bottom,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Select an image",
+                            fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
 
-                CustomTextField(
-                    value = eventDescription,
-                    onValueChange = { newValue ->
-                        eventDescription.value = newValue;
-                    },
-                    label = "Description",
-                    isPassword = false,
-                    isSingleLine = false,
-                    maxLines = 3
-                )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .padding(12.dp)
+            ) {
+                ElevatedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 16.dp)
+                    ) {
+                        Text(text = "House Type")
+                        SingleChoiceSegmentedButtonRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            options.forEachIndexed { index, option ->
+                                SegmentedButton(
+                                    selected = selectedIndex == index,
+                                    onClick = { selectedIndex = index },
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = index,
+                                        count = options.size
+                                    )
+                                ) {
+                                    Text(text = option.description)
+                                }
+                            }
+                        }
+                    }
+                }
 
-                val pickerContext = LocalContext.current
+                ElevatedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 16.dp)
+                    ) {
+                        Text("About Property")
+
+                        CustomTextField(
+                            value = eventTitle,
+                            onValueChange = { newValue ->
+                                eventTitle.value = newValue;
+                            },
+                            label = "Title",
+                            isPassword = false,
+                            leadingIcon = null,
+                            trailingIcon = null,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        CustomTextField(
+                            value = eventDescription,
+                            onValueChange = { newValue ->
+                                eventDescription.value = newValue;
+                            },
+                            label = "Description",
+                            isPassword = false,
+                            isSingleLine = false,
+                            maxLines = 3,
+                            leadingIcon = null,
+                            trailingIcon = null,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                }
+
+
                 val calendar = Calendar.getInstance()
 
                 // Fetching current year, month and day
@@ -187,9 +308,9 @@ fun AgentCreateEventView(
                 val dayOfMonth = calendar[Calendar.DAY_OF_MONTH]
 
                 val datePicker = DatePickerDialog(
-                    pickerContext,
+                    context,
                     { _: DatePicker, selectedYear: Int, selectedMonth: Int, selectedDayOfMonth: Int ->
-                        pickedDate.value = "$selectedYear-${selectedMonth + 1}-$selectedDayOfMonth"
+                        pickedDate.value = "$selectedYear-${String.format("%02d", selectedMonth + 1) }-${String.format("%02d", selectedDayOfMonth)}"
                     }, year, month, dayOfMonth
                 )
                 datePicker.datePicker.minDate = calendar.timeInMillis
@@ -199,87 +320,136 @@ fun AgentCreateEventView(
                 val minute = calendar[Calendar.MINUTE]
 
                 val timePicker = TimePickerDialog(
-                    pickerContext,
+                    context,
                     { _, selectedHour: Int, selectedMinute: Int ->
-                        pickedTime.value = "$selectedHour:$selectedMinute"
+                        pickedTime.value = "${String.format("%02d", selectedHour)}:${String.format("%02d", selectedMinute)}:00"
                     }, hour, minute, false
                 )
-                Row(modifier = Modifier
-                    .fillMaxWidth()
+
+                ElevatedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            datePicker.show()
-                        },
+                    Column(
                         modifier = Modifier
-                            .weight(1f),
-                        border = BorderStroke(1.dp, Color.Gray)
+                            .padding(horizontal = 12.dp, vertical = 16.dp)
                     ) {
-                        Text(if (pickedDate.value == "") "Select Date" else pickedDate.value)
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            timePicker.show()
-                        },
-                        modifier = Modifier
-                            .weight(1f),
-                        border = BorderStroke(1.dp, Color.Gray)
-                    ) {
-                        Text(if (pickedTime.value == "") "Select Time" else pickedTime.value)
+                        Text("Showroom Details")
+
+                        OutlinedButton(
+                            modifier = Modifier
+                                .padding(bottom = 4.dp)
+                                .fillMaxWidth(),
+                            onClick = { datePicker.show() }
+                        ) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                            Text(text = if (pickedDate.value != "") pickedDate.value else "Select Showroom Date")
+                        }
+
+                        OutlinedButton(
+                            modifier = Modifier
+                                .padding(bottom = 4.dp)
+                                .fillMaxWidth(),
+                            onClick = { timePicker.show() }
+                        ) {
+                            Icon(
+                                Icons.Default.AccessTime,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                            Text(text = if (pickedTime.value != "") pickedTime.value else "Select Showroom Time")
+                        }
                     }
                 }
 
-                CustomTextField(
-                    value = location,
-                    onValueChange = { newValue ->
-                        location.value = newValue;
-                    },
-                    label = "Location",
-                    isPassword = false
-                )
+                ElevatedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
 
-                CustomTextField(
-                    value = selectedCommunityName,
-                    onValueChange = { newValue ->
-                        selectedCommunityName.value = newValue
-                    },
-                    readOnly = true,
-                    isPassword = false,
-                    label = "Community",
-                    modifier = Modifier.clickable {
-                        isMenuOpen.value = true
+                    Column(
+                        Modifier.padding(horizontal = 12.dp, vertical = 16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Text("Showroom Venue")
+
+                            CustomTextField(
+                                value = eventLocation,
+                                onValueChange = { newValue ->
+                                    eventLocation.value = newValue;
+                                },
+                                label = "Location",
+                                isPassword = false,
+                                maxLines = 5,
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Please ensure the address is correct",
+                                fontSize = MaterialTheme.typography.labelSmall.fontSize
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.End
+                        ) {
+
+                            Button(
+                                onClick = {
+                                    if (eventLocation.value == "") return@Button
+
+                                    val geocoder = Geocoder(context)
+
+                                    val results =
+                                        eventLocation.value.let {
+                                            geocoder.getFromLocationName(
+                                                it,
+                                                1
+                                            )
+                                        }
+                                    if (!results.isNullOrEmpty()) {
+                                        val addressArray: List<Address> = results
+
+                                        for (address in addressArray) {
+                                            eventLocation.value = address.getAddressLine(0)
+                                            eventAddress.value = address
+                                        }
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "No address is found for this location",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }) {
+                                Text(text = "Check Location")
+                            }
+                        }
                     }
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-        }
-
-
-        DropdownMenu(
-            expanded = isMenuOpen.value,
-            onDismissRequest = { isMenuOpen.value = false }
-        ) {
-            viewModel.ownCommunityList.forEach { community ->
-                DropdownMenuItem(onClick = {
-                    selectedCommunityId.value = community.id
-                    selectedCommunityName.value = community.title
-                    isMenuOpen.value = false
-                }) {
-                    Text(text = community.title)
                 }
             }
         }
-
-
     }
-
-    if (showCreateError) { //Login Error Dialog
-        CustomDialogClose(
-            alertTitle = stringResource(R.string.community_exist_error_header),
-            alertBody = stringResource(R.string.community_exist_error_desc),
-            onDismissFun = { showCreateError = false },
-            btnCloseClick = { showCreateError = false })
-    }
-
-
 }
