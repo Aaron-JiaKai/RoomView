@@ -67,9 +67,9 @@ fun RegisterContent(
     val password = remember { mutableStateOf("") }
     val confirmPassword = remember { mutableStateOf("") }
 
-    val agentReferalNo = remember { mutableStateOf("") }
+    val agentReferralNo = remember { mutableStateOf("") }
 
-    var imageUri = remember { mutableStateOf<Uri?>(null) }
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
 
     var showError by remember { mutableStateOf(false) }
 
@@ -151,9 +151,9 @@ fun RegisterContent(
             when (selectedIndex) {
                 1 -> {
                     CustomTextField(
-                        value = agentReferalNo,
+                        value = agentReferralNo,
                         onValueChange = { newValue ->
-                            agentReferalNo.value = newValue
+                            agentReferralNo.value = newValue
                         },
                         label = "Referral Number",
                         isPassword = false,
@@ -235,7 +235,7 @@ fun RegisterContent(
                     .align(Alignment.End),
                 onClick = {
 
-                    if (selectedIndex == 1 && agentReferalNo.value != AGENT_REF_NO) {
+                    if (selectedIndex == 1 && agentReferralNo.value != AGENT_REF_NO) {
                         showError = true
                         viewModel.setMessage("Agent Referral Number is invalid!")
                         return@Button

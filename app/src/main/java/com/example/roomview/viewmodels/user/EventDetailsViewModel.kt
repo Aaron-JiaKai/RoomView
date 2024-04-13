@@ -18,8 +18,10 @@ class EventDetailsViewModel : ViewModel() {
     private var allEventMemberList = mutableListOf<EventMember>()
     private var allUserList = mutableListOf<User>()
     private var joinedUserIdList = mutableListOf<Int>()
+    private var agentId = ""
 
     var currentUser: User? = null
+    var currentAgent = mutableStateOf<User?>(null)
 
     var event: Event? = null
     var joinedUserList = mutableListOf<User>()
@@ -57,12 +59,14 @@ class EventDetailsViewModel : ViewModel() {
         return null
     }
 
-    private suspend fun getEvent(eventId: Int) {
+    private suspend fun getEvent(eventId: Int): Response<Event> {
         val response = repository.getEvent(eventId)
 
         if (response.isSuccessful) {
             response.body()?.let { event = it }
         }
+
+        return response
     }
 
     private suspend fun getEventMembers(eventId: Int) {
@@ -80,7 +84,7 @@ class EventDetailsViewModel : ViewModel() {
     }
 
     suspend fun getJoinedUsers(eventId: Int) {
-        getEvent(eventId)
+        val eventResponse = getEvent(eventId)
         getCurrentUser()
         getEventMembers(eventId)
 
@@ -126,6 +130,29 @@ class EventDetailsViewModel : ViewModel() {
         for (user in allUserList) {
             if (user.uid == uid) {
                 currentUser = user
+            }
+        }
+    }
+
+    suspend fun getAgent(eventId: Int) {
+
+        val eventResponse = repository.getEvent(eventId)
+
+        if (eventResponse.isSuccessful) {
+            agentId = eventResponse.body()!!.agentId
+        }
+
+        val userResponse = repository.getUsers()
+
+        if (userResponse.isSuccessful) {
+            val userList = userResponse.body()
+
+            if (userList != null) {
+                for (user in userList) {
+                    if (user.id == agentId.toInt()) {
+                        currentAgent.value = user
+                    }
+                }
             }
         }
     }

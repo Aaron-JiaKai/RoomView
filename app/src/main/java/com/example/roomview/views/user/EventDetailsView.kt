@@ -82,6 +82,7 @@ fun EventDetailsView(
     val joinStatus = viewModel.joinStatus
 
     val currentUser = viewModel.currentUser
+    val currentAgent = viewModel.currentAgent
 
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
@@ -91,6 +92,7 @@ fun EventDetailsView(
 
             if (event == null) {
                 viewModel.getJoinedUsers(eventId.toInt())
+                viewModel.getAgent(eventId.toInt())
             }
 
             isLoadingState.value = false
@@ -377,6 +379,27 @@ fun EventDetailsView(
                                                 title = event.title,
                                             )
                                         }
+                                    }
+                                }
+
+                                ElevatedCard(
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(all = 12.dp)
+                                    ) {
+                                        Text(
+                                            "Agent in Charge",
+                                            fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(bottom = 8.dp),
+                                            textAlign = TextAlign.Start,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+
+                                        currentAgent.value?.let { ParticipantCard(it) }
                                     }
                                 }
 
