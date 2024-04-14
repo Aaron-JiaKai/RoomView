@@ -26,7 +26,8 @@ fun HomeNavGraph(navController: NavHostController, paddingValues: PaddingValues)
     ) {
         composable(route = AppBottomBar.Home.route) {
             EventsView(
-                navController = navController
+                navController = navController,
+                paddingValues
             )
         }
 

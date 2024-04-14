@@ -3,6 +3,7 @@ package com.example.roomview.views.user
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,7 +37,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventsView(
-    navController: NavController
+    navController: NavController,
+    paddingValues: PaddingValues
 ) {
     val viewModel: EventsViewModel = viewModel()
     val otherEventList = viewModel.otherEventList
@@ -65,7 +67,7 @@ fun EventsView(
     if (isLoadingState.value) {
         LoadingCircle()
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             TopAppBar(
                 title = { Text("Showrooms") },
             )

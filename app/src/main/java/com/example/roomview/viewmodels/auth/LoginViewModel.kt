@@ -26,7 +26,7 @@ class LoginViewModel: ViewModel() {
         var currentUser: User? = null
 
         if (email == "") {
-            _message.value = "Email is empty"
+            _message.value = "Fields are empty! Ensure all fields are filled in and try again!."
             return null
         }
 
@@ -38,7 +38,7 @@ class LoginViewModel: ViewModel() {
         }
 
         if (currentUser == null) {
-            _message.value = "Cannot get account information right now. Please try again later."
+            _message.value = "Unable to get account information. Please try again later."
             return null
         }
 
